@@ -1,6 +1,6 @@
-import mongooes from "mongoose";
-
-const userSchema = new mongooes.Schema(
+import mongoose from "mongoose";
+import bcrypt from "bcrypt";
+const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
@@ -24,5 +24,17 @@ const userSchema = new mongooes.Schema(
   { timestamps: true }
 );
 
-const User = mongooes.model("User", userSchema);
+userSchema.methods.matchPassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
+
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) {
+    next();
+  }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+});
+
+const User = mongoose.model("User", userSchema);
 export default User;
